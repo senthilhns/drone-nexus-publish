@@ -1,15 +1,13 @@
-package nexus
+package plugin
 
 import (
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"io"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
-
-	pd "github.com/harness-community/drone-nexus-publish/plugin/plugin_defs"
-	"gopkg.in/yaml.v2"
 )
 
 type HttpClient interface {
@@ -17,7 +15,7 @@ type HttpClient interface {
 }
 
 type NexusPlugin struct {
-	InputArgs         *pd.Args
+	InputArgs         *Args
 	IsMultiFileUpload bool
 	PluginProcessingInfo
 	NexusPluginResponse
@@ -31,7 +29,7 @@ type PluginProcessingInfo struct {
 	Version    string
 	Repository string
 	GroupId    string
-	Artifacts  []pd.Artifact
+	Artifacts  []Artifact
 }
 
 type NexusPluginResponse struct {
@@ -45,7 +43,7 @@ type FailedArtifact struct {
 }
 
 func (n *NexusPlugin) Run() error {
-	pd.LogPrintln(n, "Starting Nexus Plugin Run")
+	LogPrintln(n, "Starting Nexus Plugin Run")
 
 	if n.HttpClient == nil {
 		n.HttpClient = &http.Client{}
@@ -69,11 +67,11 @@ func (n *NexusPlugin) Run() error {
 			continue
 		}
 
-		pd.LogPrintln(n, "Successfully uploaded artifact:", artifact.File)
+		LogPrintln(n, "Successfully uploaded artifact:", artifact.File)
 	}
 
 	if len(n.Failed) > 0 {
-		return pd.GetNewError("NexusPlugin Error in Run: some artifacts failed to upload")
+		return GetNewError("NexusPlugin Error in Run: some artifacts failed to upload")
 	}
 
 	return nil
@@ -93,7 +91,7 @@ func (n *NexusPlugin) WriteOutputVariables() error {
 	var retErr error = nil
 
 	for _, kvPair := range kvPairs {
-		err := pd.WriteEnvVariableAsString(kvPair.Key, kvPair.Value)
+		err := WriteEnvVariableAsString(kvPair.Key, kvPair.Value)
 		if err != nil {
 			retErr = err
 		}
@@ -102,7 +100,7 @@ func (n *NexusPlugin) WriteOutputVariables() error {
 	return retErr
 }
 
-func (n *NexusPlugin) Init(args *pd.Args) error {
+func (n *NexusPlugin) Init(args *Args) error {
 	n.InputArgs = args
 	return nil
 }
@@ -115,25 +113,25 @@ func (n *NexusPlugin) DeInit() error {
 	return nil
 }
 
-func (n *NexusPlugin) ValidateAndProcessArgs(args pd.Args) error {
-	pd.LogPrintln(n, "NexusPlugin BuildAndValidateArgs")
+func (n *NexusPlugin) ValidateAndProcessArgs(args Args) error {
+	LogPrintln(n, "NexusPlugin BuildAndValidateArgs")
 
 	err := n.DetermineIsMultiFileUpload(args)
 	if err != nil {
-		pd.LogPrintln(n, "NexusPlugin Error in ValidateAndProcessArgs: "+err.Error())
+		LogPrintln(n, "NexusPlugin Error in ValidateAndProcessArgs: "+err.Error())
 		return err
 	}
 
 	if n.IsMultiFileUpload {
 		err = n.IsMultiFileUploadArgsOk(args)
 		if err != nil {
-			pd.LogPrintln(n, "NexusPlugin Error in ValidateAndProcessArgs: "+err.Error())
+			LogPrintln(n, "NexusPlugin Error in ValidateAndProcessArgs: "+err.Error())
 			return err
 		}
 	} else {
 		err = n.IsSingleFileUploadArgsOk(args)
 		if err != nil {
-			pd.LogPrintln(n, "NexusPlugin Error in ValidateAndProcessArgs: "+err.Error())
+			LogPrintln(n, "NexusPlugin Error in ValidateAndProcessArgs: "+err.Error())
 			return err
 		}
 	}
@@ -141,8 +139,8 @@ func (n *NexusPlugin) ValidateAndProcessArgs(args pd.Args) error {
 	return nil
 }
 
-func (n *NexusPlugin) DetermineIsMultiFileUpload(args pd.Args) error {
-	pd.LogPrintln(n, "NexusPlugin DetermineIsMultiFileUpload")
+func (n *NexusPlugin) DetermineIsMultiFileUpload(args Args) error {
+	LogPrintln(n, "NexusPlugin DetermineIsMultiFileUpload")
 
 	switch {
 	case args.Attributes != "" && args.Artifact == "":
@@ -150,16 +148,16 @@ func (n *NexusPlugin) DetermineIsMultiFileUpload(args pd.Args) error {
 	case args.Artifact != "" && args.Attributes == "":
 		n.IsMultiFileUpload = true
 	case args.Attributes == "" && args.Artifact == "":
-		return pd.GetNewError("Error in DetermineCompatibilityMode: both 'Attributes' and 'Artifact' cannot be empty")
+		return GetNewError("Error in DetermineCompatibilityMode: both 'Attributes' and 'Artifact' cannot be empty")
 	default:
-		return pd.GetNewError("Error in DetermineCompatibilityMode: both 'Attributes' and 'Artifact' provided, which is ambiguous")
+		return GetNewError("Error in DetermineCompatibilityMode: both 'Attributes' and 'Artifact' provided, which is ambiguous")
 	}
 
 	return nil
 }
 
-func (n *NexusPlugin) IsMultiFileUploadArgsOk(args pd.Args) error {
-	pd.LogPrintln(n, "NexusPlugin IsMultiFileUploadArgsOk")
+func (n *NexusPlugin) IsMultiFileUploadArgsOk(args Args) error {
+	LogPrintln(n, "NexusPlugin IsMultiFileUploadArgsOk")
 
 	requiredArgs := map[string]string{
 		"username":      args.Username,
@@ -173,7 +171,7 @@ func (n *NexusPlugin) IsMultiFileUploadArgsOk(args pd.Args) error {
 
 	for field, value := range requiredArgs {
 		if value == "" {
-			return pd.GetNewError("Error in IsMultiFileUploadArgsOk: " + field + " cannot be empty")
+			return GetNewError("Error in IsMultiFileUploadArgsOk: " + field + " cannot be empty")
 		}
 	}
 
@@ -185,12 +183,12 @@ func (n *NexusPlugin) IsMultiFileUploadArgsOk(args pd.Args) error {
 	n.Version = args.NexusVersion
 
 	// Unmarshalling YAML artifact data
-	var artifacts []pd.Artifact
+	var artifacts []Artifact
 	if err := yaml.Unmarshal([]byte(args.Artifact), &artifacts); err != nil {
-		return pd.GetNewError("Error in IsMultiFileUploadArgsOk: Error decoding YAML: " + err.Error())
+		return GetNewError("Error in IsMultiFileUploadArgsOk: Error decoding YAML: " + err.Error())
 	}
 
-	var filteredArtifacts []pd.Artifact
+	var filteredArtifacts []Artifact
 	for _, artifact := range artifacts {
 		missingFields := []string{}
 		if artifact.ArtifactId == "" {
@@ -215,8 +213,8 @@ func (n *NexusPlugin) IsMultiFileUploadArgsOk(args pd.Args) error {
 	return nil
 }
 
-func (n *NexusPlugin) IsSingleFileUploadArgsOk(args pd.Args) error {
-	pd.LogPrintln(n, "NexusPlugin IsSingleFileUploadArgsOk")
+func (n *NexusPlugin) IsSingleFileUploadArgsOk(args Args) error {
+	LogPrintln(n, "NexusPlugin IsSingleFileUploadArgsOk")
 
 	requiredArgs := map[string]string{
 		"Username":   args.Username,
@@ -229,7 +227,7 @@ func (n *NexusPlugin) IsSingleFileUploadArgsOk(args pd.Args) error {
 
 	for field, value := range requiredArgs {
 		if value == "" {
-			return pd.GetNewError("Error in IsSingleFileUploadArgsOk: " + field + " cannot be empty")
+			return GetNewError("Error in IsSingleFileUploadArgsOk: " + field + " cannot be empty")
 		}
 	}
 
@@ -248,7 +246,7 @@ func (n *NexusPlugin) IsSingleFileUploadArgsOk(args pd.Args) error {
 	// Check if all required fields are present
 	for _, field := range requiredFields {
 		if values[field] == "" {
-			return pd.GetNewError("Error in IsSingleFileUploadArgsOk: " + field + " cannot be empty")
+			return GetNewError("Error in IsSingleFileUploadArgsOk: " + field + " cannot be empty")
 		}
 	}
 	n.UserName = args.Username
@@ -257,7 +255,7 @@ func (n *NexusPlugin) IsSingleFileUploadArgsOk(args pd.Args) error {
 	n.ServerUrl = args.ServerUrl
 	n.GroupId = values["CgroupId"]
 	n.Version = values["Cversion"]
-	n.Artifacts = []pd.Artifact{
+	n.Artifacts = []Artifact{
 		{
 			File:       args.Filename,
 			Classifier: values["Aclassifier"],
@@ -269,7 +267,7 @@ func (n *NexusPlugin) IsSingleFileUploadArgsOk(args pd.Args) error {
 	return nil
 }
 
-func (n *NexusPlugin) DoPostArgsValidationSetup(args pd.Args) error {
+func (n *NexusPlugin) DoPostArgsValidationSetup(args Args) error {
 	return nil
 }
 
@@ -289,7 +287,7 @@ func GetNewNexusPlugin() NexusPlugin {
 	return NexusPlugin{}
 }
 
-func (n *NexusPlugin) prepareArtifactURLs(artifact pd.Artifact) string {
+func (n *NexusPlugin) prepareArtifactURLs(artifact Artifact) string {
 	baseURL := fmt.Sprintf("%s/repository/%s/%s/%s/%s/%s-%s",
 		n.ServerUrl, n.Repository, n.GroupId, artifact.ArtifactId, n.Version,
 		artifact.ArtifactId, n.Version)
@@ -318,7 +316,7 @@ func (n *NexusPlugin) uploadFile(httpClient HttpClient, url string, content io.R
 	return nil
 }
 
-func (n *NexusPlugin) addFailedArtifact(artifact pd.Artifact, errMsg string) {
+func (n *NexusPlugin) addFailedArtifact(artifact Artifact, errMsg string) {
 	n.Failed = append(n.Failed, FailedArtifact{
 		File:       artifact.File,
 		ArtifactId: artifact.ArtifactId,

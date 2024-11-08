@@ -2,7 +2,7 @@
 // Use of this source code is governed by the Blue Oak Model License
 // that can be found in the LICENSE file.
 
-package plugin_defs
+package plugin
 
 // Pipeline provides Pipeline metadata from the environment.
 type Pipeline struct {

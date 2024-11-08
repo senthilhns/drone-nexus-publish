@@ -1,4 +1,4 @@
-package plugin_defs
+package plugin
 
 type Plugin interface {
 	Init(args *Args) error

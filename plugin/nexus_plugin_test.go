@@ -1,15 +1,13 @@
-package nexus
+package plugin
 
 import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
-
-	pd "github.com/harness-community/drone-nexus-publish/plugin/plugin_defs"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 type MockHttpClient struct {
@@ -57,7 +55,7 @@ func TestNexusPlugin_Run_UploadFailed(t *testing.T) {
 			Repository: "repo",
 			GroupId:    "group",
 			Version:    "1.0.0",
-			Artifacts: []pd.Artifact{
+			Artifacts: []Artifact{
 				{
 					File:       tmpFile,
 					ArtifactId: "artifact123",
@@ -81,8 +79,8 @@ func TestNexusPlugin_Run_UploadFailed(t *testing.T) {
 // The following tests validate argument processing without needing an actual file
 
 func TestNexusPlugin_ValidateAndProcessArgs_MultiFileUpload_Success(t *testing.T) {
-	args := pd.Args{
-		EnvPluginInputArgs: pd.EnvPluginInputArgs{
+	args := Args{
+		EnvPluginInputArgs: EnvPluginInputArgs{
 			Username:      "testUser",
 			CredentialsId: "testPass",
 			Protocol:      "https",
@@ -104,8 +102,8 @@ func TestNexusPlugin_ValidateAndProcessArgs_MultiFileUpload_Success(t *testing.T
 }
 
 func TestNexusPlugin_ValidateAndProcessArgs_SingleFileUpload_Success(t *testing.T) {
-	args := pd.Args{
-		EnvPluginInputArgs: pd.EnvPluginInputArgs{
+	args := Args{
+		EnvPluginInputArgs: EnvPluginInputArgs{
 			Username:   "testUser",
 			Password:   "testPass",
 			ServerUrl:  "https://nexus.example.com",
@@ -126,8 +124,8 @@ func TestNexusPlugin_ValidateAndProcessArgs_SingleFileUpload_Success(t *testing.
 }
 
 func TestNexusPlugin_ValidateAndProcessArgs_MissingArguments(t *testing.T) {
-	args := pd.Args{
-		EnvPluginInputArgs: pd.EnvPluginInputArgs{
+	args := Args{
+		EnvPluginInputArgs: EnvPluginInputArgs{
 			Username:   "testUser",
 			Password:   "testPass",
 			ServerUrl:  "https://nexus.example.com",
@@ -168,7 +166,7 @@ func TestNexusPlugin_Run_MultiFileUpload_Success(t *testing.T) {
 			Repository: "repo",
 			GroupId:    "group",
 			Version:    "1.0.0",
-			Artifacts: []pd.Artifact{
+			Artifacts: []Artifact{
 				{File: tmpFile1, ArtifactId: "artifact1", Type: "zip"},
 				{File: tmpFile2, ArtifactId: "artifact2", Type: "zip"},
 			},

@@ -6,30 +6,17 @@ package plugin
 
 import (
 	"context"
-
-	nx "github.com/harness-community/drone-nexus-publish/plugin/nexus"
-	pd "github.com/harness-community/drone-nexus-publish/plugin/plugin_defs"
+	//nx "github.com/harness-community/drone-nexus-publish/plugin/nexus"
+	//pd "github.com/harness-community/drone-nexus-publish/plugin/plugin_defs"
 )
 
-// // Args provides plugin execution arguments.
-// type Args struct {
-// 	Pipeline
+func GetNewPlugin(ctx context.Context, args Args) (Plugin, error) {
 
-// 	// Level defines the plugin log level.
-// 	Level string `envconfig:"PLUGIN_LOG_LEVEL"`
-
-// 	// TODO replace or remove
-// 	Param1 string `envconfig:"PLUGIN_PARAM1"`
-// 	Param2 string `envconfig:"PLUGIN_PARAM2"`
-// }
-
-func GetNewPlugin(ctx context.Context, args pd.Args) (pd.Plugin, error) {
-
-	nxp := nx.GetNewNexusPlugin()
+	nxp := GetNewNexusPlugin()
 	return &nxp, nil
 }
 
-func Exec(ctx context.Context, args pd.Args) (pd.Plugin, error) {
+func Exec(ctx context.Context, args Args) (Plugin, error) {
 
 	plugin, err := GetNewPlugin(ctx, args)
 	if err != nil {
@@ -40,10 +27,10 @@ func Exec(ctx context.Context, args pd.Args) (pd.Plugin, error) {
 	if err != nil {
 		return plugin, err
 	}
-	defer func(p pd.Plugin) {
+	defer func(p Plugin) {
 		err := p.DeInit()
 		if err != nil {
-			pd.LogPrintln(p, "Error in DeInit: "+err.Error())
+			LogPrintln(p, "Error in DeInit: "+err.Error())
 		}
 	}(plugin)
 
