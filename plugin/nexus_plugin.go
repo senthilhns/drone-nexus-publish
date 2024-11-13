@@ -60,22 +60,33 @@ func (n *NexusPlugin) Run() error {
 			n.addFailedArtifact(artifact, fmt.Sprintf("could not open file: %v", err))
 			continue
 		}
-		defer file.Close()
 
 		if n.Version == "nexus2" {
 			artifactURL := n.prepareNexus2ArtifactURL(artifact)
-			if err := n.uploadFileNexus2(artifactURL, file); err != nil {
+			if err := n.uploadFileNexus2(artifactURL, file, filePath); err != nil {
 				n.addFailedArtifact(artifact, fmt.Sprintf("upload failed: %v", err))
+				err := file.Close()
+				if err != nil {
+					LogPrintln(n, "Error closing file: ", err.Error())
+				}
 				continue
 			}
 		} else if n.Version == "nexus3" {
-			if err := n.uploadFileNexus3(artifact); err != nil {
+			if err := n.uploadFileNexus3(artifact, filePath); err != nil {
 				n.addFailedArtifact(artifact, fmt.Sprintf("upload failed: %v", err))
+				err := file.Close()
+				if err != nil {
+					LogPrintln(n, "Error closing file: ", err.Error())
+				}
 				continue
 			}
 		}
+		err = file.Close()
+		if err != nil {
+			LogPrintln(n, "Error closing file: ", err.Error())
+		}
 
-		LogPrintln(n, "Successfully uploaded artifact:", artifact.File)
+		fmt.Println(n, "Successfully uploaded artifact:", filePath)
 	}
 
 	if len(n.Failed) > 0 {
@@ -326,7 +337,7 @@ func (n *NexusPlugin) prepareNexus2ArtifactURL(artifact Artifact) string {
 	}
 }
 
-func (n *NexusPlugin) uploadFileNexus2(url string, content io.Reader) error {
+func (n *NexusPlugin) uploadFileNexus2(url string, content io.Reader, filePath string) error {
 	req, err := http.NewRequest("PUT", url, content)
 	if err != nil {
 		return err
@@ -342,12 +353,13 @@ func (n *NexusPlugin) uploadFileNexus2(url string, content io.Reader) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("upload failed with status %d", resp.StatusCode)
+		fmt.Println("File upload failed status ", resp.StatusCode)
+		return fmt.Errorf("Upload failed with status %d", resp.StatusCode)
 	}
 	return nil
 }
 
-func (n *NexusPlugin) uploadFileNexus3(artifact Artifact) error {
+func (n *NexusPlugin) uploadFileNexus3(artifact Artifact, filePath string) error {
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
@@ -414,7 +426,7 @@ func (n *NexusPlugin) uploadFileNexus3(artifact Artifact) error {
 
 	if resp.StatusCode >= 400 {
 		LogPrintln(n, "Error upload failed with status: ", resp.StatusCode)
-		return fmt.Errorf("upload failed with status %d", resp.StatusCode)
+		return fmt.Errorf("Upload failed with status %d", resp.StatusCode)
 	}
 
 	return nil
