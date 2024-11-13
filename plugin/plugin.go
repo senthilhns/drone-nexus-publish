@@ -6,8 +6,6 @@ package plugin
 
 import (
 	"context"
-	//nx "github.com/harness-community/drone-nexus-publish/plugin/nexus"
-	//pd "github.com/harness-community/drone-nexus-publish/plugin/plugin_defs"
 )
 
 func GetNewPlugin(ctx context.Context, args Args) (Plugin, error) {

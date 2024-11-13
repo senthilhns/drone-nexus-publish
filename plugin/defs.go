@@ -20,17 +20,16 @@ type Args struct {
 }
 
 type EnvPluginInputArgs struct {
-	NexusVersion  string `envconfig:"PLUGIN_NEXUS_VERSION"`
-	NexusUrl      string `envconfig:"PLUGIN_NEXUS_URL"`
-	Protocol      string `envconfig:"PLUGIN_PROTOCOL"`
-	GroupId       string `envconfig:"PLUGIN_GROUP_ID"`
-	CredentialsId string `envconfig:"PLUGIN_CREDENTIALS_ID"`
-	Repository    string `envconfig:"PLUGIN_REPOSITORY"`
-	Artifact      string `envconfig:"PLUGIN_ARTIFACTS"`
+	NexusVersion string `envconfig:"PLUGIN_NEXUS_VERSION"`
+	NexusUrl     string `envconfig:"PLUGIN_NEXUS_URL"`
+	Protocol     string `envconfig:"PLUGIN_PROTOCOL"`
+	GroupId      string `envconfig:"PLUGIN_GROUP_ID"`
+	Repository   string `envconfig:"PLUGIN_REPOSITORY"`
+	Artifact     string `envconfig:"PLUGIN_ARTIFACTS"`
+	Username     string `envconfig:"PLUGIN_USERNAME"`
+	Password     string `envconfig:"PLUGIN_PASSWORD"`
 
 	// For backward compatibility
-	Username   string `envconfig:"PLUGIN_USERNAME"`
-	Password   string `envconfig:"PLUGIN_PASSWORD"`
 	ServerUrl  string `envconfig:"PLUGIN_SERVER_URL"`
 	Filename   string `envconfig:"PLUGIN_FILENAME"`
 	Format     string `envconfig:"PLUGIN_FORMAT"`
@@ -42,4 +41,6 @@ type Artifact struct {
 	Classifier string `yaml:"classifier"`
 	ArtifactId string `yaml:"artifactId"`
 	Type       string `yaml:"type"`
+	Version    string `yaml:"version"`
+	GroupId    string `yaml:"groupId"`
 }

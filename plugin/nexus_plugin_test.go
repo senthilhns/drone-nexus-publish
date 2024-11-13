@@ -81,14 +81,14 @@ func TestNexusPlugin_Run_UploadFailed(t *testing.T) {
 func TestNexusPlugin_ValidateAndProcessArgs_MultiFileUpload_Success(t *testing.T) {
 	args := Args{
 		EnvPluginInputArgs: EnvPluginInputArgs{
-			Username:      "testUser",
-			CredentialsId: "testPass",
-			Protocol:      "https",
-			NexusUrl:      "nexus.example.com",
-			NexusVersion:  "3",
-			Repository:    "repo",
-			GroupId:       "group",
-			Artifact:      "[{ \"artifactId\": \"artifact123\", \"file\": \"testfile.zip\", \"type\": \"zip\" }]",
+			Username:     "testUser",
+			Password:     "testPass",
+			Protocol:     "https",
+			NexusUrl:     "nexus.example.com",
+			NexusVersion: "3",
+			Repository:   "repo",
+			GroupId:      "group",
+			Artifact:     "[{ \"artifactId\": \"artifact123\", \"file\": \"testfile.zip\", \"type\": \"zip\" }]",
 		},
 	}
 

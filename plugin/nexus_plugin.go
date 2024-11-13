@@ -1,13 +1,16 @@
 package plugin
 
 import (
+	"bytes"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
+
+	"gopkg.in/yaml.v2"
 )
 
 type HttpClient interface {
@@ -27,6 +30,7 @@ type PluginProcessingInfo struct {
 	Password   string
 	ServerUrl  string
 	Version    string
+	Format     string
 	Repository string
 	GroupId    string
 	Artifacts  []Artifact
@@ -58,13 +62,17 @@ func (n *NexusPlugin) Run() error {
 		}
 		defer file.Close()
 
-		// Prepare URLs for artifact and checksum uploads
-		artifactURL := n.prepareArtifactURLs(artifact)
-
-		// Upload the main artifact
-		if err := n.uploadFile(n.HttpClient, artifactURL, file); err != nil {
-			n.addFailedArtifact(artifact, fmt.Sprintf("upload failed for artifact: %v", err))
-			continue
+		if n.Version == "nexus2" {
+			artifactURL := n.prepareNexus2ArtifactURL(artifact)
+			if err := n.uploadFileNexus2(artifactURL, file); err != nil {
+				n.addFailedArtifact(artifact, fmt.Sprintf("upload failed: %v", err))
+				continue
+			}
+		} else if n.Version == "nexus3" {
+			if err := n.uploadFileNexus3(artifact); err != nil {
+				n.addFailedArtifact(artifact, fmt.Sprintf("upload failed: %v", err))
+				continue
+			}
 		}
 
 		LogPrintln(n, "Successfully uploaded artifact:", artifact.File)
@@ -160,13 +168,14 @@ func (n *NexusPlugin) IsMultiFileUploadArgsOk(args Args) error {
 	LogPrintln(n, "NexusPlugin IsMultiFileUploadArgsOk")
 
 	requiredArgs := map[string]string{
-		"username":      args.Username,
-		"credentialsId": args.CredentialsId,
-		"protocol":      args.Protocol,
-		"nexusUrl":      args.NexusUrl,
-		"nexusVersion":  args.NexusVersion,
-		"repository":    args.Repository,
-		"groupId":       args.GroupId,
+		"username":     args.Username,
+		"password":     args.Password,
+		"protocol":     args.Protocol,
+		"nexusUrl":     args.NexusUrl,
+		"nexusVersion": args.NexusVersion,
+		"repository":   args.Repository,
+		"groupId":      args.GroupId,
+		"format":       args.Format,
 	}
 
 	for field, value := range requiredArgs {
@@ -176,11 +185,12 @@ func (n *NexusPlugin) IsMultiFileUploadArgsOk(args Args) error {
 	}
 
 	n.UserName = args.Username
-	n.Password = args.CredentialsId
+	n.Password = args.Password
 	n.Repository = args.Repository
 	n.ServerUrl = args.Protocol + "://" + args.NexusUrl
 	n.GroupId = args.GroupId
 	n.Version = args.NexusVersion
+	n.Format = args.Format
 
 	// Unmarshalling YAML artifact data
 	var artifacts []Artifact
@@ -200,7 +210,12 @@ func (n *NexusPlugin) IsMultiFileUploadArgsOk(args Args) error {
 		if artifact.Type == "" {
 			missingFields = append(missingFields, "Type")
 		}
-
+		if artifact.Version == "" {
+			missingFields = append(missingFields, "Version")
+		}
+		if artifact.GroupId == "" {
+			artifact.GroupId = args.GroupId
+		}
 		if len(missingFields) > 0 {
 			n.addFailedArtifact(artifact, fmt.Sprintf("Missing fields: %s", strings.Join(missingFields, ", ")))
 		} else {
@@ -253,14 +268,17 @@ func (n *NexusPlugin) IsSingleFileUploadArgsOk(args Args) error {
 	n.Password = args.Password
 	n.Repository = args.Repository
 	n.ServerUrl = args.ServerUrl
+	n.Format = args.Format
 	n.GroupId = values["CgroupId"]
-	n.Version = values["Cversion"]
+	n.Version = "nexus3"
 	n.Artifacts = []Artifact{
 		{
 			File:       args.Filename,
 			Classifier: values["Aclassifier"],
 			ArtifactId: values["CartifactId"],
 			Type:       values["Aextension"],
+			Version:    values["Cversion"],
+			GroupId:    values["CgroupId"],
 		},
 	}
 
@@ -287,15 +305,28 @@ func GetNewNexusPlugin() NexusPlugin {
 	return NexusPlugin{}
 }
 
-func (n *NexusPlugin) prepareArtifactURLs(artifact Artifact) string {
-	baseURL := fmt.Sprintf("%s/repository/%s/%s/%s/%s/%s-%s",
-		n.ServerUrl, n.Repository, n.GroupId, artifact.ArtifactId, n.Version,
-		artifact.ArtifactId, n.Version)
+func (n *NexusPlugin) prepareNexus2ArtifactURL(artifact Artifact) string {
+	switch n.Format {
+	case "maven2":
+		return fmt.Sprintf("%s/repository/%s/%s/%s/%s/%s-%s.%s",
+			n.ServerUrl, n.Repository, artifact.GroupId, artifact.ArtifactId, artifact.Version,
+			artifact.ArtifactId, artifact.Version, artifact.Type)
 
-	return fmt.Sprintf("%s.%s", baseURL, artifact.Type)
+	case "yum":
+		return fmt.Sprintf("%s/repository/%s/%s/%s",
+			n.ServerUrl, n.Repository, artifact.ArtifactId, artifact.Version)
+
+	case "raw":
+		return fmt.Sprintf("%s/repository/%s/%s/%s.%s",
+			n.ServerUrl, n.Repository, artifact.GroupId, artifact.ArtifactId, artifact.Type)
+
+	default:
+		LogPrintln(n, "Unsupported format for direct upload:", n.Format)
+		return ""
+	}
 }
 
-func (n *NexusPlugin) uploadFile(httpClient HttpClient, url string, content io.Reader) error {
+func (n *NexusPlugin) uploadFileNexus2(url string, content io.Reader) error {
 	req, err := http.NewRequest("PUT", url, content)
 	if err != nil {
 		return err
@@ -304,7 +335,7 @@ func (n *NexusPlugin) uploadFile(httpClient HttpClient, url string, content io.R
 	req.SetBasicAuth(n.UserName, n.Password)
 	req.Header.Set("Content-Type", "application/octet-stream")
 
-	resp, err := httpClient.Do(req) // Using the HttpClient interface here
+	resp, err := n.HttpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -313,6 +344,72 @@ func (n *NexusPlugin) uploadFile(httpClient HttpClient, url string, content io.R
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("upload failed with status %d", resp.StatusCode)
 	}
+	return nil
+}
+
+func (n *NexusPlugin) uploadFileNexus3(artifact Artifact) error {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	var url string
+	var assetFieldName string
+
+	switch n.Format {
+	case "maven2":
+		_ = writer.WriteField("maven2.groupId", artifact.GroupId)
+		_ = writer.WriteField("maven2.artifactId", artifact.ArtifactId)
+		_ = writer.WriteField("maven2.version", artifact.Version)
+		assetFieldName = "maven2.asset1"
+		_ = writer.WriteField("maven2.asset1.extension", artifact.Type)
+
+	case "raw":
+		_ = writer.WriteField("raw.directory", artifact.GroupId)
+		assetFieldName = "raw.asset1"
+		_ = writer.WriteField("raw.asset1.filename", fmt.Sprintf("%s.%s", artifact.ArtifactId, artifact.Type))
+
+	default:
+		assetFieldName = fmt.Sprintf("%s.asset", n.Format)
+	}
+
+	fileWriter, err := writer.CreateFormFile(assetFieldName, artifact.File)
+	if err != nil {
+		return err
+	}
+	file, err := os.Open(artifact.File)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = io.Copy(fileWriter, file)
+	if err != nil {
+		return err
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return err
+	}
+
+	url = fmt.Sprintf("%s/service/rest/v1/components?repository=%s", n.ServerUrl, n.Repository)
+
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return err
+	}
+
+	req.SetBasicAuth(n.UserName, n.Password)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	resp, err := n.HttpClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("upload failed with status %d", resp.StatusCode)
+	}
+
 	return nil
 }
 
