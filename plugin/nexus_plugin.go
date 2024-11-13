@@ -86,7 +86,7 @@ func (n *NexusPlugin) Run() error {
 			LogPrintln(n, "Error closing file: ", err.Error())
 		}
 
-		fmt.Println(n, "Successfully uploaded artifact:", filePath)
+		fmt.Println("Successfully uploaded artifact:", filePath)
 	}
 
 	if len(n.Failed) > 0 {
