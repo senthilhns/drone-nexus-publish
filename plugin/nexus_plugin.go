@@ -182,7 +182,7 @@ func (n *NexusPlugin) IsMultiFileUploadArgsOk(args Args) error {
 		"username":     args.Username,
 		"password":     args.Password,
 		"protocol":     args.Protocol,
-		"nexusUrl":     args.NexusUrl,
+		"nexusUrl":     args.ServerUrl,
 		"nexusVersion": args.NexusVersion,
 		"repository":   args.Repository,
 		"groupId":      args.GroupId,
@@ -198,7 +198,7 @@ func (n *NexusPlugin) IsMultiFileUploadArgsOk(args Args) error {
 	n.UserName = args.Username
 	n.Password = args.Password
 	n.Repository = args.Repository
-	n.ServerUrl = args.Protocol + "://" + args.NexusUrl
+	n.ServerUrl = args.Protocol + "://" + args.ServerUrl
 	n.GroupId = args.GroupId
 	n.Version = args.NexusVersion
 	n.Format = args.Format

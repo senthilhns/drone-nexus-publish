@@ -21,7 +21,6 @@ type Args struct {
 
 type EnvPluginInputArgs struct {
 	NexusVersion string `envconfig:"PLUGIN_NEXUS_VERSION"`
-	NexusUrl     string `envconfig:"PLUGIN_NEXUS_URL"`
 	Protocol     string `envconfig:"PLUGIN_PROTOCOL"`
 	GroupId      string `envconfig:"PLUGIN_GROUP_ID"`
 	Repository   string `envconfig:"PLUGIN_REPOSITORY"`
