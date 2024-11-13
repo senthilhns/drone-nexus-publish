@@ -373,20 +373,24 @@ func (n *NexusPlugin) uploadFileNexus3(artifact Artifact) error {
 
 	fileWriter, err := writer.CreateFormFile(assetFieldName, artifact.File)
 	if err != nil {
+		LogPrintln(n, "Error CreateFormFile: ", err.Error())
 		return err
 	}
 	file, err := os.Open(artifact.File)
 	if err != nil {
+		LogPrintln(n, "Error os.Open(artifact.File): ", err.Error())
 		return err
 	}
 	defer file.Close()
 	_, err = io.Copy(fileWriter, file)
 	if err != nil {
+		LogPrintln(n, "Error io.Copy(fileWriter, file): ", err.Error())
 		return err
 	}
 
 	err = writer.Close()
 	if err != nil {
+		LogPrintln(n, "Error writer.Close(): ", err.Error())
 		return err
 	}
 
@@ -394,6 +398,7 @@ func (n *NexusPlugin) uploadFileNexus3(artifact Artifact) error {
 
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
+		LogPrintln(n, "Error http.NewRequest: ", err.Error())
 		return err
 	}
 
@@ -402,11 +407,13 @@ func (n *NexusPlugin) uploadFileNexus3(artifact Artifact) error {
 
 	resp, err := n.HttpClient.Do(req)
 	if err != nil {
+		LogPrintln(n, "Error n.HttpClient.Do(req): ", err.Error())
 		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
+		LogPrintln(n, "Error upload failed with status: ", resp.StatusCode)
 		return fmt.Errorf("upload failed with status %d", resp.StatusCode)
 	}
 
