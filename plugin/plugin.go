@@ -43,16 +43,17 @@ func Exec(ctx context.Context, args Args) (Plugin, error) {
 	}
 
 	err = plugin.Run()
+
+	err2 := plugin.WriteOutputVariables()
+	if err2 != nil {
+		LogPrintln(plugin, "Writing output variable UPLOAD_STATUS failed "+err2.Error())
+	}
 	if err != nil {
+		LogPrintln(plugin, "Upload failed "+err.Error())
 		return plugin, err
 	}
 
 	err = plugin.PersistResults()
-	if err != nil {
-		return plugin, err
-	}
-
-	err = plugin.WriteOutputVariables()
 	if err != nil {
 		return plugin, err
 	}

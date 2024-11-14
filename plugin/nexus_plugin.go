@@ -102,9 +102,13 @@ func (n *NexusPlugin) WriteOutputVariables() error {
 		Key   string
 		Value interface{}
 	}
+	var kvPairs []EnvKvPair
 
-	var kvPairs = []EnvKvPair{
-		{Key: "UPLOAD_STATUS", Value: n.Failed},
+	if len(n.Failed) == 0 {
+		LogPrintln(n, "All artifacts uploaded successfully")
+		kvPairs = append(kvPairs, EnvKvPair{Key: "UPLOAD_STATUS", Value: "Success"})
+	} else {
+		kvPairs = append(kvPairs, EnvKvPair{Key: "UPLOAD_STATUS", Value: n.Failed})
 	}
 
 	var retErr error = nil
