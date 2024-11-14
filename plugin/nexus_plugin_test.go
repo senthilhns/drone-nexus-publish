@@ -1,13 +1,14 @@
 package plugin
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 type MockHttpClient struct {
@@ -84,11 +85,12 @@ func TestNexusPlugin_ValidateAndProcessArgs_MultiFileUpload_Success(t *testing.T
 			Username:     "testUser",
 			Password:     "testPass",
 			Protocol:     "https",
-			NexusUrl:     "nexus.example.com",
+			ServerUrl:    "nexus.example.com",
 			NexusVersion: "3",
 			Repository:   "repo",
 			GroupId:      "group",
-			Artifact:     "[{ \"artifactId\": \"artifact123\", \"file\": \"testfile.zip\", \"type\": \"zip\" }]",
+			Format:       "maven2",
+			Artifact:     "[{ \"artifactId\": \"artifact123\", \"file\": \"testfile.zip\", \"type\": \"zip\", \"version\": \"1\" }]",
 		},
 	}
 
@@ -148,7 +150,7 @@ func TestNexusPlugin_Run_MultiFileUpload_Success(t *testing.T) {
 		StatusCode: 200,
 		Body:       ioutil.NopCloser(strings.NewReader("Success")),
 	}
-	mockClient.On("Do", mock.AnythingOfType("*http.Request")).Return(mockResp, nil)
+	mockClient.On("Do", mock.AnythingOfType("*http.Request")).Return(mockResp, nil).Maybe()
 
 	tmpFile1, err := createTempFile("file1.zip")
 	assert.NoError(t, err)
@@ -166,9 +168,10 @@ func TestNexusPlugin_Run_MultiFileUpload_Success(t *testing.T) {
 			Repository: "repo",
 			GroupId:    "group",
 			Version:    "1.0.0",
+			Format:     "maven2",
 			Artifacts: []Artifact{
-				{File: tmpFile1, ArtifactId: "artifact1", Type: "zip"},
-				{File: tmpFile2, ArtifactId: "artifact2", Type: "zip"},
+				{File: tmpFile1, ArtifactId: "artifact1", Type: "zip", Version: "1"},
+				{File: tmpFile2, ArtifactId: "artifact2", Type: "zip", Version: "1"},
 			},
 		},
 		HttpClient: mockClient,
