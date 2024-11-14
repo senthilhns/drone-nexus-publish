@@ -55,12 +55,14 @@ func TestNexusPlugin_Run_UploadFailed(t *testing.T) {
 			ServerUrl:  "https://nexus.example.com",
 			Repository: "repo",
 			GroupId:    "group",
-			Version:    "1.0.0",
+			Version:    "nexus3",
+			Format:     "maven2",
 			Artifacts: []Artifact{
 				{
 					File:       tmpFile,
 					ArtifactId: "artifact123",
 					Type:       "zip",
+					Version:    "1",
 				},
 			},
 		},
