@@ -11,8 +11,8 @@ set -x
 
 # linux
 GOOS=linux GOARCH=amd64 go build -o release/linux/amd64/drone-nexus-publish
-#GOOS=linux GOARCH=arm64 go build -o release/linux/arm64/drone-nexus-publish
-#GOOS=linux GOARCH=arm   go build -o release/linux/arm/drone-nexus-publish
+GOOS=linux GOARCH=arm64 go build -o release/linux/arm64/drone-nexus-publish
+GOOS=linux GOARCH=arm   go build -o release/linux/arm/drone-nexus-publish
 
 # windows
-#GOOS=windows go build -o release/windows/amd64/drone-nexus-publish.exe
+GOOS=windows go build -o release/windows/amd64/drone-nexus-publish.exe
