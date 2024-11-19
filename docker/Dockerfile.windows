@@ -14,5 +14,5 @@ LABEL maintainer="Drone.IO Community <drone-dev@googlegroups.com>" `
   org.label-schema.vendor="Drone.IO Community" `
   org.label-schema.schema-version="1.0"
 
-ADD release/windows/amd64/drone-nexus-publish.exe C:/drone-nexus-publish.exe
-ENTRYPOINT [ "C:\\drone-nexus-publish.exe" ]
+ADD release/windows/amd64/plugin.exe C:/plugin.exe
+ENTRYPOINT [ "C:\\plugin.exe" ]
