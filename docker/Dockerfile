@@ -6,5 +6,5 @@ ENV GODEBUG netdns=go
 
 COPY --from=alpine /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-ADD release/linux/amd64/drone-nexus-publish /bin/
-ENTRYPOINT ["/bin/drone-nexus-publish"]
+ADD release/linux/amd64/plugin /bin/
+ENTRYPOINT ["/bin/plugin"]
