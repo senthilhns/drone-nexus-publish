@@ -7,7 +7,7 @@ tags:
 {{/if}}
 manifests:
   -
-    image: senthilhns/drone-nexus-publish-single-store:{{#if build.tag}}{{trimPrefix "v" build.tag}}-{{/if}}linux-amd64
+    image: plugins/nexus-publish:{{#if build.tag}}{{trimPrefix "v" build.tag}}-{{/if}}linux-amd64
     platform:
       architecture: amd64
       os: linux
