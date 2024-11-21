@@ -69,7 +69,7 @@ docker run --rm --network host \
     -e PLUGIN_REPOSITORY='stage-dev-repo' \
       -v $(pwd):$(pwd) \
       -w $(pwd) \
-    harnesscommunity/drone-nexus-publish
+    plugins/nexus-publish:latest
 ```
 
 In Harnes CI, YAML for multi file Upload
