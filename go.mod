@@ -1,6 +1,6 @@
 module github.com/harness-community/drone-nexus-publish
 
-go 1.22
+go 1.22.7
 
 require (
 	github.com/kelseyhightower/envconfig v1.4.0
