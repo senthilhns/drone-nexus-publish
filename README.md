@@ -80,7 +80,7 @@ In Harnes CI, YAML for multi file Upload
     identifier: Plugin_1
     spec:
       connectorRef: Docker_Hub_Anonymous
-      image: harnesscommunity/drone-nexus-publish:latest
+      image: plugins/nexus-publish:latest
       settings:
         nexus_version: nexus3
         server_url: 43.204.190.241:8081
