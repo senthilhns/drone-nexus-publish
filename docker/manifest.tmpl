@@ -12,7 +12,7 @@ manifests:
       architecture: amd64
       os: linux
   -
-    image: senthilhns/drone-nexus-publish-single-store:{{#if build.tag}}{{trimPrefix "v" build.tag}}-{{/if}}linux-arm64
+    image: plugins/nexus-publish:{{#if build.tag}}{{trimPrefix "v" build.tag}}-{{/if}}linux-arm64
     platform:
       variant: v8
       architecture: arm64
